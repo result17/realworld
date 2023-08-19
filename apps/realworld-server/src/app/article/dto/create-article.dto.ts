@@ -1,23 +1,23 @@
 import {
-  IsBoolean,
   IsNotEmpty,
   IsOptional,
   IsString,
   MaxLength,
   MinLength,
-  isArray,
 } from 'class-validator';
 
 export class CreateArticleDto {
+  
   @IsString()
   @IsNotEmpty()
-  @MinLength(2)
+  @MinLength(5)
+  @MaxLength(20)
   slug: string;
 
   @IsString()
   @IsNotEmpty()
   @MinLength(5)
-  @MaxLength(50)
+  @MaxLength(20)
   title: string;
 
   @IsString()
@@ -36,5 +36,5 @@ export class CreateArticleDto {
   @MaxLength(20, {
     each: true,
   })
-  tags: Set<string>;
+  tags: string[];
 }
