@@ -68,6 +68,19 @@
           "codeCoverage": true
         }
       }
+    },
+    "init-pg": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "docker-compose -f ./apps/realworld-server/src/docker-compose.yml -p realworld-server up -d"
+      }
+    },
+    "seed-db": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsx seed.ts",
+        "cwd": "./apps/realworld-server/prisma"
+      }
     }
   },
   "tags": []
