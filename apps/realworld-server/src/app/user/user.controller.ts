@@ -3,11 +3,13 @@ import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { RegisterUserDto } from './dto/register-user.dto';
+import { Public } from '../decorators/auth'
 
 @Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
+  @Public()
   @Post('register')
   async register(@Body() registerUserDto: RegisterUserDto) {
 

@@ -5,6 +5,8 @@ import { LocalAuthGuard } from './auth/local-auth.guard'
 import { AuthService } from './auth/auth.service'
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
 
+import { Public } from './decorators/auth'
+
 @Controller()
 export class AppController {
   constructor(private readonly appService: AppService, private authService: AuthService) {}
@@ -21,6 +23,7 @@ export class AppController {
    * }
    * must be like above
    */
+  @Public()
   @UseGuards(LocalAuthGuard)
   @Post('auth/login')
   async login(@Request() req) {

@@ -5,6 +5,7 @@ declare global {
   namespace NodeJS {
     interface ProcessEnv {
       JWT_CONSTANTS_SECRET: string;
+      JWT_CONSTANTS_EXPIRES_IN: string;
     }
   }
 }
