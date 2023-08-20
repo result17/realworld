@@ -1,13 +1,37 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, HttpException, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpException, HttpStatus, Request, UseGuards } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { RegisterUserDto } from './dto/register-user.dto';
 import { Public } from '../decorators/auth'
+import { AuthService } from '../auth/auth.service'
+import { LocalAuthGuard } from '../auth/local-auth.guard'
+import { ReqUser } from '../decorators/params'
+import { type User } from 'prisma'
+import { type LoginUserVo  } from './vo'
 
-@Controller('user')
+@Controller('users')
 export class UserController {
-  constructor(private readonly userService: UserService) {}
+  constructor(private readonly userService: UserService, private authService: AuthService) {}
+
+  @Public()
+  @UseGuards(LocalAuthGuard)
+  @Post('login')
+  login(@ReqUser() user: User): LoginUserVo {
+    const { token } = this.authService.login(user)
+    const { username, email, bio, image } = user
+    const res: LoginUserVo = {
+      user: {
+        token,
+        username,
+        email,
+        bio,
+        image
+      }
+    }
+
+    return res
+  }
 
   @Public()
   @Post('register')
@@ -46,6 +70,7 @@ export class UserController {
     return this.userService.findAll();
   }
 
+  @Public()
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.userService.findById(+id);

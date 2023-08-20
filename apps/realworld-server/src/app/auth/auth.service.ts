@@ -10,7 +10,7 @@ export class AuthService {
 
   constructor(private userService: UserService, private jwtService: JwtService) {}
 
-  async vaildateUser(email: string, password: string) {
+  async validateUser(email: string, password: string) {
     const existingUserByEmail = await this.userService.findByEmail(email)
     if (!existingUserByEmail || existingUserByEmail.password !== password) {
       throw new UnauthorizedException()
@@ -18,11 +18,10 @@ export class AuthService {
     return existingUserByEmail
   }
 
-  async login({ username, email }: User) {
+  login({ username, email }: User) {
     const payload: AuthPayload = { username, email }
-
     return {
-      access_token: this.jwtService.sign(payload)
+      token: this.jwtService.sign(payload)
     }
   }
 }
