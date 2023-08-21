@@ -127,4 +127,10 @@ export class ArticleService {
       },
     })
   }
+
+  async deleteById(id: number) {
+    return await this.prisma.article.delete({
+      where: { id }
+    })
+  }
 }

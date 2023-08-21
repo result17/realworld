@@ -12,6 +12,7 @@ datasource db {
 
 model Article {
   id          Int       @id @default(autoincrement())
+  // TODO index
   slug        String    @unique
   title       String
   description String

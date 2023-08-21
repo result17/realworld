@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, Param, HttpException, HttpStatus, Put } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param, HttpException, HttpStatus, Put, Delete } from '@nestjs/common';
 import { ArticleService } from './article.service';
 
 import { CreateArticleRequest, UpdateArticleRequest } from './request'
@@ -62,7 +62,7 @@ export class ArticleController {
     const existingArticle = await this.articleService.findBySlug(slug)
 
     if (!existingArticle) {
-      throw new HttpException('Article is not found', HttpStatus.NOT_FOUND)
+      throw new HttpException('Article is not found!', HttpStatus.NOT_FOUND)
     }
 
     const product = await this.articleService.updateBySlug(article, slug, id)
@@ -72,5 +72,20 @@ export class ArticleController {
     }
 
     return ArticleController.buildSingleArticleVo(product, id)
+  }
+
+  @Delete(':slug')
+  async deleteBySlug(@Param() { slug }: ArticleSlugParam, @ReqUser() { id }: AuthPayload) {
+    const existingArticle = await this.articleService.findBySlug(slug)
+
+    if (!existingArticle) {
+      throw new HttpException('Article is not found!', HttpStatus.NOT_FOUND)
+    }
+
+    if (existingArticle.authorId !== id) {
+      throw new HttpException('You are not article author!', HttpStatus.FORBIDDEN)
+    }
+
+    await this.articleService.deleteById(existingArticle.id)
   }
 }
