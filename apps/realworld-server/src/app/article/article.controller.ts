@@ -65,8 +65,6 @@ export class ArticleController {
       throw new HttpException('Article is not found', HttpStatus.NOT_FOUND)
     }
 
-    console.log(article)
-
     const product = await this.articleService.updateBySlug(article, slug, id)
 
     if (!product) {
