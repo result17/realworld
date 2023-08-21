@@ -9,10 +9,8 @@ export class ArticleService {
 
   constructor(private prisma: PrismaService, private user: UserService) {}
 
-  async create(createArticleDto: CreateArticleDto, username: string) {
+  async create(createArticleDto: CreateArticleDto, id: number) {
     const { slug, title, description, body, tags } = createArticleDto
-
-    const { id } = await this.user.findByUsername(username)
 
     return await this.prisma.article.create({
       data: {
@@ -54,8 +52,6 @@ export class ArticleService {
         },
       },
     })
-
-    return 'This action adds a new article';
   }
 
   findAll() {

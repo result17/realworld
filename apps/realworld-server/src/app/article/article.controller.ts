@@ -1,15 +1,38 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
 import { ArticleService } from './article.service';
-import { CreateArticleDto } from './dto/create-article.dto';
 import { UpdateArticleDto } from './dto/update-article.dto';
+
+import { CreateArticleRequest } from './request'
+import { ReqUser } from '../decorators/params';
+import { AuthPayload } from '../auth/types';
+
+import { type SingleArticleVo } from './vo'
 
 @Controller('article')
 export class ArticleController {
   constructor(private readonly articleService: ArticleService) { }
 
   @Post()
-  create(@Body() createArticleDto: CreateArticleDto) {
-    // return this.articleService.create(createArticleDto);
+  async create(@ReqUser() { id: curUserId }: AuthPayload, @Body() { article }: CreateArticleRequest): Promise<SingleArticleVo> {
+    const product = await this.articleService.create(article, curUserId);
+
+    const { author: { username, bio, image }, tagList, favoritedBy, ...rest }  = product
+
+    return {
+      article: {
+        ...rest,
+        tagList: tagList.map(({ name }) => name),
+        favorited: favoritedBy.reduce((acc, { id }) => acc || id === curUserId, false),
+        favoritedCount: favoritedBy.length,
+        author: {
+          username,
+          bio,
+          image,
+          following: false,
+        }
+      }
+    }
+
   }
 
   @Get()
