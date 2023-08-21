@@ -7,22 +7,16 @@ import {
 } from 'class-validator';
 
 export class CreateArticleDto {
-  
-  @IsString()
-  @IsNotEmpty()
-  @MinLength(5)
-  @MaxLength(20)
-  slug: string;
 
   @IsString()
   @IsNotEmpty()
   @MinLength(5)
-  @MaxLength(20)
+  @MaxLength(50)
   title: string;
 
   @IsString()
   @MinLength(5)
-  @MaxLength(50)
+  @MaxLength(100)
   @IsNotEmpty()
   description: string;
   
@@ -36,5 +30,5 @@ export class CreateArticleDto {
   @MaxLength(20, {
     each: true,
   })
-  tags: string[];
+  tagList: string[];
 }

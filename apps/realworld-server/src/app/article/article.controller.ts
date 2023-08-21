@@ -1,57 +1,78 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param, HttpException, HttpStatus, Put } from '@nestjs/common';
 import { ArticleService } from './article.service';
-import { UpdateArticleDto } from './dto/update-article.dto';
 
-import { CreateArticleRequest } from './request'
+import { CreateArticleRequest, UpdateArticleRequest } from './request'
 import { ReqUser } from '../decorators/params';
 import { AuthPayload } from '../auth/types';
 
 import { type SingleArticleVo } from './vo'
+import { ArticleSlugParam } from './types'
+import { Public } from '../decorators/auth';
 
-@Controller('article')
+
+@Controller('articles')
 export class ArticleController {
   constructor(private readonly articleService: ArticleService) { }
 
-  @Post()
-  async create(@ReqUser() { id: curUserId }: AuthPayload, @Body() { article }: CreateArticleRequest): Promise<SingleArticleVo> {
-    const product = await this.articleService.create(article, curUserId);
-
-    const { author: { username, bio, image }, tagList, favoritedBy, ...rest }  = product
+  private static buildSingleArticleVo(product, userId?: number) {
+    const { author: { username, bio, image, followedBy }, tagList, favoritedBy, id, slug, _count, ...rest } = product
 
     return {
       article: {
         ...rest,
         tagList: tagList.map(({ name }) => name),
-        favorited: favoritedBy.reduce((acc, { id }) => acc || id === curUserId, false),
+        favorited: userId !== undefined ? favoritedBy.reduce((acc, { id }) => acc || id === userId, false) : false,
         favoritedCount: favoritedBy.length,
         author: {
           username,
           bio,
           image,
-          following: false,
+          following: userId !== undefined ? followedBy.reduce((acc, { id }) => acc || id === userId, false) : false,
         }
       }
     }
-
   }
 
-  @Get()
-  findAll() {
-    return this.articleService.findAll();
+  @Post()
+  async create(@ReqUser() { id: curUserId }: AuthPayload, @Body() { article }: CreateArticleRequest): Promise<SingleArticleVo> {
+    const product = await this.articleService.create(article, curUserId);
+
+    if (!product) {
+      throw new HttpException('Forbidden creating article!', HttpStatus.FORBIDDEN)
+    }
+
+    return ArticleController.buildSingleArticleVo(product, curUserId)
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.articleService.findOne(+id);
+  @Public()
+  @Get(':slug')
+  async getBySlug(@Param() { slug }: ArticleSlugParam, @ReqUser() user: AuthPayload | undefined) {
+    const product = await this.articleService.getBySlug(slug)
+
+    if (!product) {
+      throw new HttpException('Article is not found!', HttpStatus.NOT_FOUND)
+    }
+
+    return ArticleController.buildSingleArticleVo(product, user?.id)
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateArticleDto: UpdateArticleDto) {
-    return this.articleService.update(+id, updateArticleDto);
-  }
+  @Put(':slug')
+  async updateBySlug(@Param() { slug }: ArticleSlugParam, @Body() { article }: UpdateArticleRequest , @ReqUser() { id }: AuthPayload) {
+    
+    const existingArticle = await this.articleService.findBySlug(slug)
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.articleService.remove(+id);
+    if (!existingArticle) {
+      throw new HttpException('Article is not found', HttpStatus.NOT_FOUND)
+    }
+
+    console.log(article)
+
+    const product = await this.articleService.updateBySlug(article, slug, id)
+
+    if (!product) {
+      throw new HttpException('Article is not found!', HttpStatus.NOT_FOUND)
+    }
+
+    return ArticleController.buildSingleArticleVo(product, id)
   }
 }

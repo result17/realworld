@@ -8,12 +8,14 @@ import { PrismaModule } from './prisma/prisma.module'
 import { UserModule } from './user/user.module'
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { ProfileModule } from './profile/profile.module'
+import { ArticleModule } from './article/article.module'
 
 @Module({
   imports: [
     PrismaModule,
     UserModule,
-    ProfileModule
+    ProfileModule,
+    ArticleModule,
   ],
   controllers: [AppController],
   providers: [AppService, {

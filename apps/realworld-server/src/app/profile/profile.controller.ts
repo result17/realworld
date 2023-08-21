@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Delete, Query, HttpException, HttpStatus, Param } from '@nestjs/common';
+import { Controller, Get, Post, Delete, HttpException, HttpStatus, Param } from '@nestjs/common';
 import { ProfileService } from './profile.service';
 import { ReqUser } from '../decorators/params';
 import { AuthPayload } from '../auth/types';

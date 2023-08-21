@@ -1,16 +1,18 @@
 import { Injectable } from '@nestjs/common';
 import { CreateArticleDto } from './dto/create-article.dto';
-import { UpdateArticleDto } from './dto/update-article.dto';
-import { type PrismaService } from '../prisma/prisma.service'
-import { type UserService } from '../user/user.service'
+import { UpdateArticleDto } from './dto/update-article.dto'
+import { PrismaService } from '../prisma/prisma.service'
+import slugify from 'slugify';
 
 @Injectable()
 export class ArticleService {
 
-  constructor(private prisma: PrismaService, private user: UserService) {}
+  constructor(private prisma: PrismaService) {}
 
   async create(createArticleDto: CreateArticleDto, id: number) {
-    const { slug, title, description, body, tags } = createArticleDto
+    const { title, description, body, tagList } = createArticleDto
+
+    const slug = `${slugify(title)}-${id}`;
 
     return await this.prisma.article.create({
       data: {
@@ -22,7 +24,7 @@ export class ArticleService {
           connect: { id }
         },
         tagList: {
-          connectOrCreate: [...new Set(tags)].map((tag: string) => {
+          connectOrCreate: [...new Set(tagList)].map((tag: string) => {
             return ({
               create: { name: tag },
               where: { name: tag },
@@ -54,19 +56,75 @@ export class ArticleService {
     })
   }
 
-  findAll() {
-    return `This action returns all article`;
+  async getBySlug(slug: string) {
+    return await this.prisma.article.findUnique({
+      where: { slug },
+      include: {
+        tagList: {
+          select: {
+            name: true,
+          },
+        },
+        author: {
+          select: {
+            username: true,
+            bio: true,
+            image: true,
+            followedBy: true,
+          },
+        },
+        favoritedBy: true,
+        _count: {
+          select: {
+            favoritedBy: true,
+          },
+        },
+      },
+    })
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} article`;
+  async findBySlug(slug: string) {
+    return await this.prisma.article.findUnique({
+      where: { slug }
+    })
   }
 
-  update(id: number, updateArticleDto: UpdateArticleDto) {
-    return `This action updates a #${id} article`;
-  }
+  async updateBySlug({ title, ...rest }: UpdateArticleDto, slug: string, id: number) {
 
-  remove(id: number) {
-    return `This action removes a #${id} article`;
+    return await this.prisma.article.update({
+      where: { slug },
+      data: {
+        ...(title !== undefined ? {
+          ...rest,
+          title,
+          slug: `${slugify(title)}-${id}`,
+        } : rest),
+        updatedAt: new Date().toISOString(),
+        author: {
+          connect: { id }
+        },
+      },
+      include: {
+        tagList: {
+          select: {
+            name: true,
+          },
+        },
+        author: {
+          select: {
+            username: true,
+            bio: true,
+            image: true,
+            followedBy: true,
+          },
+        },
+        favoritedBy: true,
+        _count: {
+          select: {
+            favoritedBy: true,
+          },
+        },
+      },
+    })
   }
 }
