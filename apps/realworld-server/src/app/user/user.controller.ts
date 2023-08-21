@@ -1,88 +1,140 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, HttpException, HttpStatus, Request, UseGuards } from '@nestjs/common';
-import { UserService } from './user.service';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
-import { RegisterUserDto } from './dto/register-user.dto';
-import { Public } from '../decorators/auth'
-import { AuthService } from '../auth/auth.service'
-import { LocalAuthGuard } from '../auth/local-auth.guard'
-import { ReqUser } from '../decorators/params'
-import { type User } from 'prisma'
-import { type LoginUserVo  } from './vo'
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Headers,
+  HttpException,
+  HttpStatus,
+  Post,
+  UseGuards,
+  Put
+} from "@nestjs/common";
+import { UserService } from "./user.service";
 
-@Controller('users')
+
+import { Public } from "../decorators/auth";
+import { AuthService } from "../auth/auth.service";
+import { LocalAuthGuard } from "../auth/local-auth.guard";
+import { ReqUser } from "../decorators/params";
+import { type User } from "prisma/prisma-client";
+import { type AuthUserVo } from "./vo";
+
+import { RegisterUserRequest, UpdateUserRequest } from "./request";
+
+import { AuthPayload } from "../auth/types";
+
+/**
+ * DOC
+ * https://realworld-docs.netlify.app/docs/specs/backend-specs/endpoints/
+ */
+
+@Controller()
 export class UserController {
-  constructor(private readonly userService: UserService, private authService: AuthService) {}
+  constructor(
+    private readonly userService: UserService,
+    private authService: AuthService,
+  ) { }
 
-  @Public()
-  @UseGuards(LocalAuthGuard)
-  @Post('login')
-  login(@ReqUser() user: User): LoginUserVo {
-    const { token } = this.authService.login(user)
-    const { username, email, bio, image } = user
-    const res: LoginUserVo = {
+  private static buildAuthUserVo(user: User, token: string): AuthUserVo {
+    const { username, email, bio, image } = user;
+    return {
       user: {
         token,
         username,
         email,
         bio,
-        image
-      }
-    }
-
-    return res
+        image,
+      },
+    };
   }
 
   @Public()
-  @Post('register')
-  async register(@Body() registerUserDto: RegisterUserDto) {
+  @UseGuards(LocalAuthGuard)
+  @Post("users/login")
+  login(@ReqUser() user: User): AuthUserVo {
+    const { token } = this.authService.login(user);
+    return UserController.buildAuthUserVo(user, token);
+  }
 
-    const { username, email } = registerUserDto
+  @Public()
+  @Post()
+  async register(@Body() request: RegisterUserRequest) {
+    const { username, email, password } = request.user;
 
     // TODO PASSWORD HASH
     // const hashedPassword = await bcrypt.hash(password, 10);
 
     const [existingUserByEmail, existingUserByUsername] = await Promise.all([
       this.userService.findByEmail(email),
-      this.userService.findByUsername(username)
-    ]) 
-  
-  
+      this.userService.findByUsername(username),
+    ]);
+
     if (existingUserByEmail || existingUserByUsername) {
       throw new HttpException(
-        `${existingUserByEmail ? 'email has already been taken' : 'has already been taken'}`,
-        HttpStatus.UNPROCESSABLE_ENTITY
-      )
+        `${existingUserByEmail
+          ? "email has already been taken"
+          : "has already been taken"
+        }`,
+        HttpStatus.UNPROCESSABLE_ENTITY,
+      );
     }
 
-    return await this.userService.create({
-      ...registerUserDto,
-      demo: false
+    const user = await this.userService.create({
+      username,
+      email,
+      password,
+      bio: null,
+      image: null,
+      demo: false,
     });
+
+    const { token } = this.authService.login(user);
+
+    return UserController.buildAuthUserVo(user, token);
   }
 
-  create(@Body() createUserDto: CreateUserDto) {
-    return this.userService.create(createUserDto);
+  @Get("users")
+  async query(
+    @ReqUser() { id }: AuthPayload,
+    @Headers("Authorization") auth: string,
+  ): Promise<AuthUserVo> {
+    const token = auth.split(" ")[1];
+
+    if (!token) {
+      throw new HttpException("Auth failed", HttpStatus.UNAUTHORIZED);
+    }
+
+    const user = await this.userService.findById(id);
+
+    if (!user) {
+      throw new HttpException("Auth failed", HttpStatus.UNAUTHORIZED);
+    }
+
+    return UserController.buildAuthUserVo(user, token);
   }
 
-  @Get()
-  findAll() {
-    return this.userService.findAll();
-  }
+  @Put("user")
+  async update(@Body() request: UpdateUserRequest, @ReqUser() { id }: AuthPayload, @Headers("Authorization") auth: string,): Promise<AuthUserVo> {
+    const user = await this.userService.findById(id);
 
-  @Public()
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.userService.findById(+id);
-  }
+    if (!user) {
+      throw new HttpException("Auth failed", HttpStatus.UNAUTHORIZED);
+    }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
-    return this.userService.updateById(+id, updateUserDto);
-  }
+    const { email, bio, image } = request.user
+    const newUser = await this.userService.updateById(id, {
+      email,
+      bio,
+      image
+    });
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.userService.removeById(+id);
+    const token = auth.split(" ")[1];
+
+    if (!token) {
+      throw new HttpException("Auth failed", HttpStatus.UNAUTHORIZED);
+    }
+
+    return UserController.buildAuthUserVo(newUser, token);
   }
 }

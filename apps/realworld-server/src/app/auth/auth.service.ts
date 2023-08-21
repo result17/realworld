@@ -18,8 +18,8 @@ export class AuthService {
     return existingUserByEmail
   }
 
-  login({ username, email }: User) {
-    const payload: AuthPayload = { username, email }
+  login({ username, email, id }: User) {
+    const payload: AuthPayload = { username, email, id }
     return {
       token: this.jwtService.sign(payload)
     }

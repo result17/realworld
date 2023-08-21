@@ -1,12 +1,12 @@
-import { LoginUserDto } from '../dto/login-user.dto'
+import { UpdateUserDto } from '../dto/update-user.dto'
 import {
   IsNotEmpty, ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer'
 
-export class LoginUserRequest {
+export class UpdateUserRequest {
   @IsNotEmpty()
   @ValidateNested()
-  @Type(() => LoginUserDto)
-  user: LoginUserDto
+  @Type(() => UpdateUserDto)
+  user: UpdateUserDto
 }
