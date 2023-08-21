@@ -9,6 +9,7 @@ import { UserModule } from './user/user.module'
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { ProfileModule } from './profile/profile.module'
 import { ArticleModule } from './article/article.module'
+import { TagModule } from './tag/tag.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { ArticleModule } from './article/article.module'
     UserModule,
     ProfileModule,
     ArticleModule,
+    TagModule,
   ],
   controllers: [AppController],
   providers: [AppService, {
