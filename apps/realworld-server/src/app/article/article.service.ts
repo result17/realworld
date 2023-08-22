@@ -3,6 +3,7 @@ import { CreateArticleDto } from './dto/create-article.dto';
 import { UpdateArticleDto } from './dto/update-article.dto'
 import { PrismaService } from '../prisma/prisma.service'
 import slugify from 'slugify';
+import { CreateCommentDto } from './dto/create-comment.dto';
 
 @Injectable()
 export class ArticleService {
@@ -131,6 +132,38 @@ export class ArticleService {
   async deleteById(id: number) {
     return await this.prisma.article.delete({
       where: { id }
+    })
+  }
+
+  async addCommentToArticle({ body  }: CreateCommentDto, slug: string, userId: number) {
+    const article = await this.prisma.article.findUnique({
+      where: { slug }
+    })
+
+    return await this.prisma.comment.create({
+      data: {
+        body,
+        article: {
+          connect: {
+            id: article?.id
+          }
+        },
+        author: {
+          connect: {
+            id: userId,
+          },
+        },
+      },
+      include: {
+        author: {
+          select: {
+            username: true,
+            bio: true,
+            image: true,
+            followedBy: true,
+          },
+        },
+      }
     })
   }
 }

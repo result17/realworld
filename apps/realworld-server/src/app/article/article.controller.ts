@@ -1,11 +1,11 @@
 import { Controller, Post, Body, Get, Param, HttpException, HttpStatus, Put, Delete } from '@nestjs/common';
 import { ArticleService } from './article.service';
 
-import { CreateArticleRequest, UpdateArticleRequest } from './request'
+import { CreateArticleRequest, UpdateArticleRequest, CreateCommentRequest } from './request'
 import { ReqUser } from '../decorators/params';
 import { AuthPayload } from '../auth/types';
 
-import { type SingleArticleVo } from './vo'
+import { type SingleArticleVo, type SingleCommentVo } from './vo'
 import { ArticleSlugParam } from './types'
 import { Public } from '../decorators/auth';
 
@@ -57,8 +57,8 @@ export class ArticleController {
   }
 
   @Put(':slug')
-  async updateBySlug(@Param() { slug }: ArticleSlugParam, @Body() { article }: UpdateArticleRequest , @ReqUser() { id }: AuthPayload) {
-    
+  async updateBySlug(@Param() { slug }: ArticleSlugParam, @Body() { article }: UpdateArticleRequest, @ReqUser() { id }: AuthPayload) {
+
     const existingArticle = await this.articleService.findBySlug(slug)
 
     if (!existingArticle) {
@@ -87,5 +87,24 @@ export class ArticleController {
     }
 
     await this.articleService.deleteById(existingArticle.id)
+  }
+
+  @Post(':slug/comments')
+  async addCommentToArticle(@Param() { slug }: ArticleSlugParam, @Body() { comment }: CreateCommentRequest, @ReqUser() { id: userId }: AuthPayload): Promise<SingleCommentVo> {
+    const { author, id, createdAt, updatedAt, body } = await this.articleService.addCommentToArticle(comment, slug, userId)
+    return {
+      comment: {
+        author: {
+          username: author.username,
+          bio: author.bio,
+          image: author.image,
+          following: author.followedBy.reduce((acc, { id }) => acc || id === userId, false)
+        },
+        id,
+        createdAt,
+        updatedAt,
+        body,
+      }
+    }
   }
 }
