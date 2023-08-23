@@ -135,17 +135,14 @@ export class ArticleService {
     })
   }
 
-  async addCommentToArticle({ body  }: CreateCommentDto, slug: string, userId: number) {
-    const article = await this.prisma.article.findUnique({
-      where: { slug }
-    })
-
+  async addCommentToArticle({ body  }: CreateCommentDto, articleId: number, userId: number) {
+    
     return await this.prisma.comment.create({
       data: {
         body,
         article: {
           connect: {
-            id: article?.id
+            id: articleId
           }
         },
         author: {
@@ -164,6 +161,34 @@ export class ArticleService {
           },
         },
       }
+    })
+  }
+
+  async getCommentById(commentId: number) {
+    return await this.prisma.comment.findUnique({
+      where: { id: commentId },
+    })
+  }
+
+  async getCommentsOfArticle(articleId: number) {
+    return await this.prisma.comment.findMany({
+      where: { articleId },
+      include: {
+        author: {
+          select: {
+            username: true,
+            bio: true,
+            image: true,
+            followedBy: true,
+          },
+        },
+      } 
+    })
+  }
+
+  async deleteCommentsById(commentId: number) {
+    return await this.prisma.comment.delete({
+      where: { id: commentId }
     })
   }
 }
