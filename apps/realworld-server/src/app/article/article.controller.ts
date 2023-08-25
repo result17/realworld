@@ -165,4 +165,29 @@ export class ArticleController {
 
     await this.articleService.deleteCommentsById(id)
   }
+
+  @Post(':slug/favorite')
+  async favortiteArticle(@Param() { slug }: ArticleSlugParam, @ReqUser() { id: userId }: AuthPayload) {
+    const existingArticle = await this.articleService.findBySlug(slug)
+
+    if (!existingArticle) {
+      throw new HttpException('Article is not found!', HttpStatus.NOT_FOUND)
+    }
+
+    const product = await this.articleService.favoriteArticle(existingArticle.id, userId)
+    return ArticleController.buildSingleArticleVo(product, userId)
+  }
+
+  
+  @Delete(':slug/favorite')
+  async unfavortiteArticle(@Param() { slug }: ArticleSlugParam, @ReqUser() { id: userId }: AuthPayload) {
+    const existingArticle = await this.articleService.findBySlug(slug)
+
+    if (!existingArticle) {
+      throw new HttpException('Article is not found!', HttpStatus.NOT_FOUND)
+    }
+
+    const product = await this.articleService.unfavoriteArticle(existingArticle.id, userId)
+    return ArticleController.buildSingleArticleVo(product, userId)
+  }
 }

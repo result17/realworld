@@ -191,4 +191,73 @@ export class ArticleService {
       where: { id: commentId }
     })
   }
+
+   async favoriteArticle(acrticleId: number, userId: number) {
+    return await this.prisma.article.update({
+      where: { id: acrticleId },
+      data: {
+        favoritedBy: {
+           connect: {
+            id: userId
+           }
+        }
+      },
+      include: {
+        tagList: {
+          select: {
+            name: true,
+          },
+        },
+        author: {
+          select: {
+            username: true,
+            bio: true,
+            image: true,
+            followedBy: true,
+          },
+        },
+        favoritedBy: true,
+        _count: {
+          select: {
+            favoritedBy: true,
+          },
+        },
+      },
+    })
+   }
+
+   async unfavoriteArticle(acrticleId: number, userId: number) {
+    return await this.prisma.article.update({
+      where: { id: acrticleId },
+      data: {
+        favoritedBy: {
+           disconnect: {
+            id: userId
+           }
+        }
+      },
+      include: {
+        tagList: {
+          select: {
+            name: true,
+          },
+        },
+        author: {
+          select: {
+            username: true,
+            bio: true,
+            image: true,
+            followedBy: true,
+          },
+        },
+        favoritedBy: true,
+        _count: {
+          select: {
+            favoritedBy: true,
+          },
+        },
+      },
+    })
+   }
+
 }
