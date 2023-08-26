@@ -1,12 +1,12 @@
-import { Controller, Post, Body, Get, Param, HttpException, HttpStatus, Put, Delete } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param, HttpException, HttpStatus, Put, Delete, Query } from '@nestjs/common';
 import { ArticleService } from './article.service';
 
 import { CreateArticleRequest, UpdateArticleRequest, CreateCommentRequest } from './request'
 import { ReqUser } from '../decorators/params';
 import { AuthPayload } from '../auth/types';
 
-import type { SingleArticleVo, CommentVo, SingleCommentVo, MultipleCommentsVo } from './vo'
-import { ArticleSlugParam, ArticleSlugWithCommentIdParam } from './types'
+import type { SingleArticleVo, CommentVo, SingleCommentVo, MultipleCommentsVo, MultipleArticlesVo } from './vo'
+import type { ArticleSlugParam, ArticleSlugWithCommentIdParam, ArticleOptionalFilterParam, ArticlesRequireFilterParam, ArticlesParam } from './types'
 import { Public } from '../decorators/auth';
 
 
@@ -14,22 +14,30 @@ import { Public } from '../decorators/auth';
 export class ArticleController {
   constructor(private readonly articleService: ArticleService) { }
 
-  private static buildSingleArticleVo(product, userId?: number) {
+  private static DEFAULT_OFFSET = 0;
+  
+  private static DEFAULT_LIMIT = 20;
+
+  private static buildArticleVo(product, userId?: number) {
     const { author: { username, bio, image, followedBy }, tagList, favoritedBy, id, slug, _count, ...rest } = product
+    return {
+      ...rest,
+      tagList: tagList.map(({ name }) => name),
+      favorited: userId !== undefined ? favoritedBy.reduce((acc, { id }) => acc || id === userId, false) : false,
+      favoritedCount: favoritedBy.length,
+      author: {
+        username,
+        bio,
+        image,
+        following: userId !== undefined ? followedBy.reduce((acc, { id }) => acc || id === userId, false) : false,
+      }
+    }
+  }
+
+  private static buildSingleArticleVo(product, userId?: number): SingleArticleVo {
 
     return {
-      article: {
-        ...rest,
-        tagList: tagList.map(({ name }) => name),
-        favorited: userId !== undefined ? favoritedBy.reduce((acc, { id }) => acc || id === userId, false) : false,
-        favoritedCount: favoritedBy.length,
-        author: {
-          username,
-          bio,
-          image,
-          following: userId !== undefined ? followedBy.reduce((acc, { id }) => acc || id === userId, false) : false,
-        }
-      }
+      article: ArticleController.buildArticleVo(product, userId)
     }
   }
 
@@ -69,6 +77,21 @@ export class ArticleController {
     }
 
     return ArticleController.buildSingleArticleVo(product, curUserId)
+  }
+
+  @Get('feed')
+  async getFeedArticles(@Query() param: Partial<ArticlesParam>, @ReqUser() { id: userId }: AuthPayload) {
+    const paramInDefault: ArticlesParam = {
+      offset: param.offset || ArticleController.DEFAULT_OFFSET,
+      limit: param.limit || ArticleController.DEFAULT_LIMIT
+    }
+
+    const { articlesCount, articles } = await this.articleService.getFeedArticles(paramInDefault, userId)
+
+    return {
+      articles: articles.map(article => ArticleController.buildArticleVo(article)),
+      articlesCount
+    }
   }
 
   @Public()
@@ -189,5 +212,22 @@ export class ArticleController {
 
     const product = await this.articleService.unfavoriteArticle(existingArticle.id, userId)
     return ArticleController.buildSingleArticleVo(product, userId)
+  }
+
+  @Public()
+  @Get()
+  async getArticles(@Query() param: ArticleOptionalFilterParam): Promise<MultipleArticlesVo> {
+    const requiredParams: ArticlesRequireFilterParam = {
+      ...param,
+      offset: param.offset || ArticleController.DEFAULT_OFFSET,
+      limit: param.limit || ArticleController.DEFAULT_LIMIT
+    }
+
+    const { articlesCount, articles } = await this.articleService.getArticles(requiredParams)
+
+    return {
+      articles: articles.map(article => ArticleController.buildArticleVo(article)),
+      articlesCount
+    }
   }
 }

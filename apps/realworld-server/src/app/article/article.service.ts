@@ -4,11 +4,49 @@ import { UpdateArticleDto } from './dto/update-article.dto'
 import { PrismaService } from '../prisma/prisma.service'
 import slugify from 'slugify';
 import { CreateCommentDto } from './dto/create-comment.dto';
+import type { ArticlesRequireFilterParam, ArticlesParam } from './types'
 
 @Injectable()
 export class ArticleService {
 
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
+
+  private static buildArticlesQueries(param: ArticlesRequireFilterParam) {
+    const queries = [];
+    if ('tag' in param) {
+      queries.push({
+        tagList: {
+          some: {
+            name: param.tag,
+          },
+        },
+      });
+    }
+
+    if ('favorited' in param) {
+      queries.push({
+        favoritedBy: {
+          some: {
+            username: {
+              equals: param.favorited
+            }
+          },
+        },
+      });
+    }
+
+    if ('author' in param) {
+      queries.push({
+        author: {
+          username: {
+            equals: param.author
+          }
+        }
+      })
+    }
+
+    return queries
+  }
 
   async create(createArticleDto: CreateArticleDto, id: number) {
     const { title, description, body, tagList } = createArticleDto
@@ -135,8 +173,8 @@ export class ArticleService {
     })
   }
 
-  async addCommentToArticle({ body  }: CreateCommentDto, articleId: number, userId: number) {
-    
+  async addCommentToArticle({ body }: CreateCommentDto, articleId: number, userId: number) {
+
     return await this.prisma.comment.create({
       data: {
         body,
@@ -182,7 +220,7 @@ export class ArticleService {
             followedBy: true,
           },
         },
-      } 
+      }
     })
   }
 
@@ -192,14 +230,14 @@ export class ArticleService {
     })
   }
 
-   async favoriteArticle(acrticleId: number, userId: number) {
+  async favoriteArticle(articleId: number, userId: number) {
     return await this.prisma.article.update({
-      where: { id: acrticleId },
+      where: { id: articleId },
       data: {
         favoritedBy: {
-           connect: {
+          connect: {
             id: userId
-           }
+          }
         }
       },
       include: {
@@ -224,16 +262,16 @@ export class ArticleService {
         },
       },
     })
-   }
+  }
 
-   async unfavoriteArticle(acrticleId: number, userId: number) {
+  async unfavoriteArticle(articleId: number, userId: number) {
     return await this.prisma.article.update({
-      where: { id: acrticleId },
+      where: { id: articleId },
       data: {
         favoritedBy: {
-           disconnect: {
+          disconnect: {
             id: userId
-           }
+          }
         }
       },
       include: {
@@ -258,6 +296,98 @@ export class ArticleService {
         },
       },
     })
-   }
+  }
 
+  async getArticles(param: ArticlesRequireFilterParam) {
+    const andQueries = ArticleService.buildArticlesQueries(param);
+
+    const articlesCount = await this.prisma.article.count({
+      where: {
+        AND: andQueries,
+      },
+    });
+
+    const articles = await this.prisma.article.findMany({
+      where: { AND: andQueries },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      skip: param.offset,
+      take: param.limit,
+      include: {
+        tagList: {
+          select: {
+            name: true,
+          },
+        },
+        author: {
+          select: {
+            username: true,
+            bio: true,
+            image: true,
+            followedBy: true,
+          },
+        },
+        favoritedBy: true,
+        _count: {
+          select: {
+            favoritedBy: true,
+          },
+        },
+      },
+    });
+
+    return {
+      articles,
+      articlesCount
+    }
+  }
+
+  async getFeedArticles({ offset, limit }: ArticlesParam, userId: number) {
+    const articlesCount = await this.prisma.article.count({
+      where: {
+        author: {
+          followedBy: { some: { id: userId } },
+        },
+      },
+    })
+
+    const articles = await this.prisma.article.findMany({
+      where: {
+        author: {
+          followedBy: { some: { id: userId } },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      skip: offset,
+      take: limit,
+      include: {
+        tagList: {
+          select: {
+            name: true,
+          },
+        },
+        author: {
+          select: {
+            username: true,
+            bio: true,
+            image: true,
+            followedBy: true,
+          },
+        },
+        favoritedBy: true,
+        _count: {
+          select: {
+            favoritedBy: true,
+          },
+        },
+      },
+    });
+    return {
+      articlesCount,
+      articles
+    }
+  }
 }

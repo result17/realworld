@@ -13,6 +13,11 @@ export interface SingleArticleVo {
   article: ArticleVo
 }
 
+export interface MultipleArticlesVo {
+  articles: ArticleVo[],
+  articlesCount: number,
+}
+
 export type CommentVo = Omit<Comment, 'articleId' | 'authorId'> & {
   author: Pick<User, 'username' | 'bio' | 'image'> & {
     following: boolean
