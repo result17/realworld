@@ -32,4 +32,9 @@ export default defineNuxtConfig({
    **/
   alias: getMonorepoTsConfigPaths('../../tsconfig.base.json'),
   devtools: { enabled: true },
+  devServer: {
+    port: 8080
+  },
+  modules: ['@unocss/nuxt'],
+  css: ['@unocss/reset/tailwind.css']
 });
