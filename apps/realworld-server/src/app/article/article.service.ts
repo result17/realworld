@@ -1,9 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import { CreateArticleDto } from './dto/create-article.dto';
-import { UpdateArticleDto } from './dto/update-article.dto'
+import { CreateArticleDto, UpdateArticleDto, CreateCommentDto } from './dto';
 import { PrismaService } from '../prisma/prisma.service'
 import slugify from 'slugify';
-import { CreateCommentDto } from './dto/create-comment.dto';
 import type { ArticlesRequireFilterParam, ArticlesParam } from './types'
 
 @Injectable()

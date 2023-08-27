@@ -1,3 +1,1 @@
-export interface TagsVo {
-  tags: string[]
-}
+export { TagsVo } from '@realworld/data'
