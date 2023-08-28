@@ -61,5 +61,9 @@ export class RegisterUserRequest {
   @ValidateNested()
   @Type(() => RegisterUserDto)
   user: RegisterUserDto
+
+  constructor(user: RegisterUserDto) {
+    this.user = user
+  }
 }
 

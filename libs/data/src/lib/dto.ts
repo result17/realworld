@@ -99,5 +99,6 @@ export class CreateUserDto {
 
 export class UpdateUserDto extends PickType(CreateUserDto, ['email', 'bio', 'image'] as const) {}
 
-export class RegisterUserDto extends PickType(CreateUserDto, ['email', 'username', 'password'] as const) {}
+export const RegisterUserSuperDto = PickType(CreateUserDto, ['email', 'username', 'password'])
 
+export class RegisterUserDto extends PickType(CreateUserDto, ['email', 'username', 'password']) {}

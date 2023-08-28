@@ -36,5 +36,10 @@ export default defineNuxtConfig({
     port: 8080
   },
   modules: ['@unocss/nuxt'],
-  css: ['@unocss/reset/tailwind.css']
+  css: ['@unocss/reset/tailwind.css'],
+  runtimeConfig: {
+    public: {
+      apiBase: process.env.NUXT_PUBLIC_API_BASE || '/api'
+    }
+  },
 });
